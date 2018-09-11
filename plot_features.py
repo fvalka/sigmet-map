@@ -9,12 +9,10 @@ from matplotlib.patches import Patch
 from shapely.geometry import asShape, Point  # manipulating geometry
 from shapely.ops import transform
 
-from Configuration import SIGMET_COLOR, \
-    SIGMET_ALPHA, METAR_COLOR_UNKOWN, METAR_FLIGHT_CATEGORY_COLORS, METAR_ALPHA, TEXT_REPLACEMENT
-
 
 class PlotFeatures:
-    def __init__(self, plot_definition):
+    def __init__(self, plot_definition, color_scheme):
+        self._color_scheme = color_scheme
         self._plot_definition = plot_definition
 
     def plot(self, features):
@@ -51,8 +49,9 @@ class PlotFeatures:
                     plotting_failed.append(feat['properties'][text_property])
 
             ax.add_collection(
-                PatchCollection(patches, facecolor=SIGMET_COLOR, edgecolor=SIGMET_COLOR,
-                                linewidths=1.5, alpha=SIGMET_ALPHA, zorder=40))
+                PatchCollection(patches, facecolor=self._color_scheme.SIGMET_COLOR,
+                                edgecolor=self._color_scheme.SIGMET_COLOR,
+                                linewidths=1.5, alpha=self._color_scheme.SIGMET_ALPHA, zorder=40))
 
         def plot_one_feature(feat, label_property, patches, text_property):
             """
@@ -75,7 +74,7 @@ class PlotFeatures:
                     label_geometry(geom, feat, label_property, text_property)
             elif feat["geometry"]["type"] == "Point":
                 geom = transform(m, Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1]))
-                ax.plot(geom.x, geom.y, 'o', color=SIGMET_COLOR, markersize=12, zorder=35)
+                ax.plot(geom.x, geom.y, 'o', color=self._color_scheme.SIGMET_COLOR, markersize=12, zorder=35)
                 label_geometry(geom, feat, label_property, text_property)
             else:
                 raise ValueError('Geometry type was neither Polygon nor Point.')
@@ -97,7 +96,7 @@ class PlotFeatures:
             if geom.intersects(self._plot_definition.region_box):
                 idx = len(info) + 1
                 label = feat["properties"][label_property]
-                label = TEXT_REPLACEMENT.get(label, label)
+                label = self._color_scheme.TEXT_REPLACEMENT.get(label, label)
                 text = label + "\n" + str(idx) + "."
                 new_text = self._plot_definition.ax.text(centroid.x, centroid.y, text, horizontalalignment='center',
                                                          verticalalignment='center', zorder=50, fontweight="heavy",
@@ -117,9 +116,11 @@ class PlotFeatures:
                     geom = transform(m, Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1]))
 
                     label = feat["properties"].get("fltcat", "?")
-                    color = METAR_FLIGHT_CATEGORY_COLORS.get(label, METAR_COLOR_UNKOWN)
+                    color = self._color_scheme.METAR_FLIGHT_CATEGORY_COLORS.get(label,
+                                                                                self._color_scheme.METAR_COLOR_UNKOWN)
 
-                    ax.plot(geom.x, geom.y, 'o', color=color, markersize=5, zorder=30, alpha=METAR_ALPHA)
+                    ax.plot(geom.x, geom.y, 'o', color=color, markersize=5,
+                            zorder=30, alpha=self._color_scheme.METAR_ALPHA)
 
         plot_features(features.sigmets_international["features"], "hazard", "rawSigmet")
         plot_features(features.sigmets_us["features"], "hazard", "rawAirSigmet")
@@ -136,8 +137,7 @@ class PlotFeatures:
 
         plt.show()
 
-    @staticmethod
-    def _plot_legend(ax, plotting_failed):
+    def _plot_legend(self, ax, plotting_failed):
         """
         Plot the legend on the map.
 
@@ -153,11 +153,11 @@ class PlotFeatures:
                          fontweight="heavy")
 
         def metar_legend(flight_category):
-            return Line2D([0], [0], marker='o', color=METAR_FLIGHT_CATEGORY_COLORS[flight_category],
-                          label=flight_category, markersize=8, linestyle='None', alpha=METAR_ALPHA)
+            return Line2D([0], [0], marker='o', color=self._color_scheme.METAR_FLIGHT_CATEGORY_COLORS[flight_category],
+                          label=flight_category, markersize=8, linestyle='None', alpha=self._color_scheme.METAR_ALPHA)
 
         legend_elements = [metar_legend('VFR'), metar_legend('MVFR'), metar_legend('IFR'),
                            metar_legend('LIFR'), metar_legend('?'),
-                           Patch(facecolor=SIGMET_COLOR, edgecolor=SIGMET_COLOR,
-                                 label='SIGMETs and AIRMETs', alpha=SIGMET_ALPHA)]
+                           Patch(facecolor=self._color_scheme.SIGMET_COLOR, edgecolor=self._color_scheme.SIGMET_COLOR,
+                                 label='SIGMETs and AIRMETs', alpha=self._color_scheme.SIGMET_ALPHA)]
         ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.005), ncol=6)

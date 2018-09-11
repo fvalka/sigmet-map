@@ -8,7 +8,7 @@ from mpl_toolkits.basemap import Basemap
 from shapely.geometry import box  # manipulating geometry
 
 # CONSTANTS/CONFIGURATION
-from Configuration import MAP_COLOR_LAND, MAP_COLOR_WATER, MAP_COLOR_COUNTRIES, MAP_COLOR_COASTLINES
+from color_scheme import DefaultColorScheme, NorthAmericaColorScheme
 from model import PlotDefinition, Features
 from plot_features import PlotFeatures
 
@@ -24,6 +24,7 @@ def load_json_from_web(url):
 # initiate the plot axes
 fig = plt.figure(figsize=(12, 12))  # create a figure to contain the plot elements
 ax = fig.gca()
+color_scheme = NorthAmericaColorScheme()
 
 # Draw Basemap
 
@@ -33,12 +34,12 @@ ax = fig.gca()
 map = Basemap(llcrnrlon=-15, llcrnrlat=30, urcrnrlon=46, urcrnrlat=67,
               projection='lcc', lat_1=40, lat_2=55, lon_0=10, resolution="i")
 # North America
-# map = Basemap(llcrnrlon=-130, llcrnrlat=5, urcrnrlon=-55, urcrnrlat=70,
+#map = Basemap(llcrnrlon=-130, llcrnrlat=5, urcrnrlon=-55, urcrnrlat=70,
 #              projection='cyl', lat_1=40, lat_2=55, lon_0=-100, resolution="i")
-map.drawcoastlines(color=MAP_COLOR_COASTLINES)
-map.drawcountries(color=MAP_COLOR_COUNTRIES)
-map.drawmapboundary(fill_color=MAP_COLOR_WATER)
-map.fillcontinents(color=MAP_COLOR_LAND, lake_color=MAP_COLOR_WATER)
+map.drawcoastlines(color=color_scheme.MAP_COLOR_COASTLINES)
+map.drawcountries(color=color_scheme.MAP_COLOR_COUNTRIES)
+map.drawmapboundary(fill_color=color_scheme.MAP_COLOR_WATER)
+map.fillcontinents(color=color_scheme.MAP_COLOR_LAND, lake_color=color_scheme.MAP_COLOR_WATER)
 
 region_box = box(minx=map.xmin, miny=map.ymin, maxx=map.xmax, maxy=map.ymax)
 bbox = str(map.lonmin) + "," + str(map.latmin) + "," + str(map.lonmax) + "," + str(map.latmax)
@@ -72,7 +73,7 @@ plot_defintion = PlotDefinition(map, fig, ax, region_box)
 features = Features(features_json['sigmets_international'], features_json['sigmets_us'], features_json['cwa_us'],
                     features_json['metars'])
 
-plot_features = PlotFeatures(plot_defintion)
+plot_features = PlotFeatures(plot_defintion, color_scheme)
 plot_features.plot(features)
 
 
