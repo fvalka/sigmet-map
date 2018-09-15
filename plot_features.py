@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import matplotlib.pyplot as plt  # plotting data
-from adjustText import adjust_text
+from adjustText import adjust_text, get_renderer, get_bboxes
 from descartes import PolygonPatch  # integrating geom object to matplot
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
@@ -69,7 +69,7 @@ class PlotFeatures:
                 # convert the geometry to shapely
                 geom_raw = asShape(feat["geometry"])
                 if len(geom_raw.shell) > 2:
-                    geom = transform(m, geom_raw.buffer(0))
+                    geom = transform(m, geom_raw.buffer(0)).buffer(0)
                     patches.append(PolygonPatch(geom))
                     label_geometry(geom, feat, label_property, text_property)
             elif feat["geometry"]["type"] == "Point":
@@ -78,6 +78,13 @@ class PlotFeatures:
                 label_geometry(geom, feat, label_property, text_property)
             else:
                 raise ValueError('Geometry type was neither Polygon nor Point.')
+
+        def find_text(x, y):
+            for text in texts:
+                text_x, text_y = text.get_position()
+                if text_x == x and text_y == y:
+                    return text
+            return None
 
         def label_geometry(geom, feat, label_property, text_property):
             """
@@ -98,7 +105,17 @@ class PlotFeatures:
                 label = feat["properties"][label_property]
                 label = self._color_scheme.TEXT_REPLACEMENT.get(label, label)
                 text = label + "\n" + str(idx) + "."
-                new_text = self._plot_definition.ax.text(centroid.x, centroid.y, text, horizontalalignment='center',
+
+                text_x = centroid.x
+                text_y = centroid.y
+                conflicting_text = find_text(centroid.x, centroid.y)
+                if conflicting_text:
+                    r = get_renderer(self._plot_definition.ax.get_figure())
+                    bbox = get_bboxes([conflicting_text], r, (1.0, 1.0), ax)
+                    text_x = centroid.x - bbox[0].width/10
+                    text_y = centroid.y - bbox[0].height/10
+
+                new_text = self._plot_definition.ax.text(text_x, text_y, text, horizontalalignment='center',
                                                          verticalalignment='center', zorder=50, fontweight="heavy",
                                                          fontsize=9)
                 texts.append(new_text)

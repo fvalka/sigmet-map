@@ -1,5 +1,4 @@
 class Features:
-
     def __init__(self, sigmets_international, sigmets_us, cwa_us, metars):
         self.metars = metars
         self.cwa_us = cwa_us

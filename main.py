@@ -10,6 +10,7 @@ from shapely.geometry import box  # manipulating geometry
 # CONSTANTS/CONFIGURATION
 from color_scheme import DefaultColorScheme, NorthAmericaColorScheme
 from model import PlotDefinition, Features
+from sigmet_map import MapProvider
 from plot_features import PlotFeatures
 
 t0 = time.time()
@@ -31,11 +32,19 @@ color_scheme = NorthAmericaColorScheme()
 # map = Basemap(projection='cyl', urcrnrlon=44, urcrnrlat=72, llcrnrlon=-19, llcrnrlat=33, resolution="i")
 # map = Basemap(width=5e6,height=5e6, projection='gnom',lat_0=53.,lon_0=10., resolution="i")
 # Europe
-map = Basemap(llcrnrlon=-15, llcrnrlat=30, urcrnrlon=46, urcrnrlat=67,
-              projection='lcc', lat_1=40, lat_2=55, lon_0=10, resolution="i")
+# map = Basemap(llcrnrlon=-15, llcrnrlat=30, urcrnrlon=46, urcrnrlat=67,
+#              projection='lcc', lat_1=40, lat_2=55, lon_0=10, resolution="i")
 # North America
-#map = Basemap(llcrnrlon=-130, llcrnrlat=5, urcrnrlon=-55, urcrnrlat=70,
-#              projection='cyl', lat_1=40, lat_2=55, lon_0=-100, resolution="i")
+europe = dict(llcrnrlon=-15, llcrnrlat=30, urcrnrlon=46, urcrnrlat=67,
+              projection='lcc', lat_1=40, lat_2=55, lon_0=10, resolution="i")
+north_america = dict(llcrnrlon=-130, llcrnrlat=5, urcrnrlon=-55, urcrnrlat=70,
+                     projection='cyl', lat_1=40, lat_2=55, lon_0=-100, resolution="i")
+south_america = dict(llcrnrlon=-100, llcrnrlat=-54, urcrnrlon=-37, urcrnrlat=15,
+                     projection='lcc', lat_1=-8, lat_2=-33, lon_0=-60, resolution="i")
+map = Basemap(**europe)
+print("Basmap instantation " + str(time.time() - t0))
+
+t0 = time.time()
 map.drawcoastlines(color=color_scheme.MAP_COLOR_COASTLINES)
 map.drawcountries(color=color_scheme.MAP_COLOR_COUNTRIES)
 map.drawmapboundary(fill_color=color_scheme.MAP_COLOR_WATER)
@@ -70,12 +79,13 @@ print("Http access: " + str(time.time() - t0))
 t0 = time.time()
 
 plot_defintion = PlotDefinition(map, fig, ax, region_box)
+
+# plot_defintion = MapProvider().get_map("eu")
 features = Features(features_json['sigmets_international'], features_json['sigmets_us'], features_json['cwa_us'],
                     features_json['metars'])
 
 plot_features = PlotFeatures(plot_defintion, color_scheme)
 plot_features.plot(features)
-
 
 print("Plotting: " + str(time.time() - t0))
 t0 = time.time()
