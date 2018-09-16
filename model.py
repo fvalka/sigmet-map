@@ -7,12 +7,13 @@ class Features:
 
 
 class PlotDefinition:
-    def __init__(self, projection, fig, ax, region_box, bbox_string):
+    def __init__(self, projection, fig, ax, region_box, bbox_string, color_scheme):
         self.projection = projection
         self.fig = fig
         self.ax = ax
         self.region_box = region_box
         self.bbox_string = bbox_string
+        self.color_scheme = color_scheme
 
 
 class PlotResult:

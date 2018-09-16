@@ -8,7 +8,7 @@ from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from shapely.geometry import asShape, Point  # manipulating geometry
+from shapely.geometry import asShape, Point, box  # manipulating geometry
 
 from model import PlotResult
 
@@ -20,8 +20,8 @@ class PlotFeatures:
     """
     _log = logging.getLogger('plot_features')
 
-    def __init__(self, plot_definition, color_scheme):
-        self._color_scheme = color_scheme
+    def __init__(self, plot_definition):
+        self._color_scheme = plot_definition.color_scheme
         self._plot_definition = plot_definition
 
     def plot(self, features, output_path):
@@ -30,6 +30,7 @@ class PlotFeatures:
         class was instantiated.
 
         :param features: Feature object containing the parsed GEOJSON data
+        :param output_path: Path to where the plot will be saved. Only PNG supported for now!
         :return:
         """
         self._log.debug("Plotting features onto axis")
@@ -129,8 +130,8 @@ class PlotFeatures:
                     self._log.debug("Resolving conflicting text")
                     r = get_renderer(self._plot_definition.ax.get_figure())
                     bbox = get_bboxes([conflicting_text], r, (1.0, 1.0), ax)
-                    text_x = centroid.x - bbox[0].width / 10
-                    text_y = centroid.y - bbox[0].height / 10
+                    text_x = text_x - bbox[0].width / 10
+                    text_y = text_y - bbox[0].height / 10
 
                 new_text = ax.text(text_x, text_y, text, horizontalalignment='center',
                                    verticalalignment='center', zorder=50, fontweight="heavy",

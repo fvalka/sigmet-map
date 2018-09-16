@@ -23,7 +23,7 @@ class SigmetMap:
         plot_definition = self._map_provider.create(region)
         features = self._feature_provider.load(plot_definition.bbox_string)
 
-        plot_features = PlotFeatures(plot_definition, DefaultColorScheme)
+        plot_features = PlotFeatures(plot_definition)
         return plot_features.plot(features, output_path)
 
 
@@ -81,7 +81,7 @@ class MapProvider:
         x_min, y_min, x_max, y_max = region_box.bounds
         bbox = str(x_min) + "," + str(y_min) + "," + str(x_max) + "," + str(y_max)
 
-        return PlotDefinition(projection, fig, ax, region_box, bbox)
+        return PlotDefinition(projection, fig, ax, region_box, bbox, color_scheme)
 
     @staticmethod
     def _add_base_features(ax, color_scheme):
