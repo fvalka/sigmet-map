@@ -135,7 +135,7 @@ class PlotFeatures:
 
                 new_text = ax.text(text_x, text_y, text, horizontalalignment='center',
                                    verticalalignment='center', zorder=50, fontweight="heavy",
-                                   fontsize=7)
+                                   fontsize=8)
                 texts.append(new_text)
                 info[idx] = feat["properties"][text_property]
 
