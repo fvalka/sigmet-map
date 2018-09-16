@@ -12,6 +12,10 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
+map_provider = MapProvider()
+feature_provider = FeatureProvider()
+sigmet_map_plotter = SigmetMap(map_provider, feature_provider)
+
 
 @app.route('/')
 def index():
@@ -21,15 +25,12 @@ def index():
 @app.route('/sigmet_map/<region>')
 @cache.memoize(timeout=60)
 def sigmet_map(region):
-    map_provider = MapProvider()
-    feature_provider = FeatureProvider()
-
     if region not in map_provider.get_regions():
         abort(404)
 
     # Use a random file path, which should never ever collide
     file_name = secrets.token_urlsafe(32) + ".png"
-    plot_result = SigmetMap(map_provider, feature_provider).plot(region, "static/" + file_name)
+    plot_result = sigmet_map_plotter.plot(region, "static/" + file_name)
     url = url_for('static', filename=file_name)
     return jsonify(url=url, infos=plot_result.info, failed=plot_result.failed)
 
