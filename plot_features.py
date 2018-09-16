@@ -1,21 +1,30 @@
+import logging
 from datetime import datetime
 
-import matplotlib.pyplot as plt  # plotting data
+import cartopy.crs as ccrs
 from adjustText import adjust_text, get_renderer, get_bboxes
 from descartes import PolygonPatch  # integrating geom object to matplot
+from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from shapely.geometry import asShape, Point  # manipulating geometry
-from shapely.ops import transform
+
+from model import PlotResult
 
 
 class PlotFeatures:
+    """
+    Plots the SIGMET, AIRMET, CWA and METAR features onto a matplotlib axis with details of the map provided
+    in the PlotDefinition.
+    """
+    _log = logging.getLogger('plot_features')
+
     def __init__(self, plot_definition, color_scheme):
         self._color_scheme = color_scheme
         self._plot_definition = plot_definition
 
-    def plot(self, features):
+    def plot(self, features, output_path):
         """
         Plots the features: International SIGMETs, US SIGMETs, US AIRMETs and METARS on the map with which this
         class was instantiated.
@@ -23,6 +32,7 @@ class PlotFeatures:
         :param features: Feature object containing the parsed GEOJSON data
         :return:
         """
+        self._log.debug("Plotting features onto axis")
 
         # Storage of return values
         texts = []
@@ -30,7 +40,7 @@ class PlotFeatures:
         info = {}
 
         ax = self._plot_definition.ax
-        m = self._plot_definition.map
+        data_crs = ccrs.PlateCarree()
 
         def plot_features(features, label_property, text_property):
             """
@@ -47,11 +57,13 @@ class PlotFeatures:
                     plot_one_feature(feat, label_property, patches, text_property)
                 except ValueError:
                     plotting_failed.append(feat['properties'][text_property])
+                    self._log.warning("Plotting of feature=%s failed", feat)
 
             ax.add_collection(
                 PatchCollection(patches, facecolor=self._color_scheme.SIGMET_COLOR,
                                 edgecolor=self._color_scheme.SIGMET_COLOR,
-                                linewidths=1.5, alpha=self._color_scheme.SIGMET_ALPHA, zorder=40))
+                                linewidths=1.5, alpha=self._color_scheme.SIGMET_ALPHA, zorder=40,
+                                transform=data_crs))
 
         def plot_one_feature(feat, label_property, patches, text_property):
             """
@@ -69,14 +81,19 @@ class PlotFeatures:
                 # convert the geometry to shapely
                 geom_raw = asShape(feat["geometry"])
                 if len(geom_raw.shell) > 2:
-                    geom = transform(m, geom_raw.buffer(0)).buffer(0)
+                    geom = geom_raw.buffer(0)
                     patches.append(PolygonPatch(geom))
                     label_geometry(geom, feat, label_property, text_property)
+                else:
+                    self._log.warning("Encountered feature which had less than 2 elements in its shell feature=%s",
+                                      feat)
             elif feat["geometry"]["type"] == "Point":
-                geom = transform(m, Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1]))
-                ax.plot(geom.x, geom.y, 'o', color=self._color_scheme.SIGMET_COLOR, markersize=12, zorder=35)
+                geom = Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1])
+                ax.plot(geom.x, geom.y, 'o', color=self._color_scheme.SIGMET_COLOR, markersize=8,
+                        zorder=35, transform=data_crs)
                 label_geometry(geom, feat, label_property, text_property)
             else:
+                self._log.error("Encountered geometry which was neither a polygon nor a point. feature=%s", feat)
                 raise ValueError('Geometry type was neither Polygon nor Point.')
 
         def find_text(x, y):
@@ -106,18 +123,18 @@ class PlotFeatures:
                 label = self._color_scheme.TEXT_REPLACEMENT.get(label, label)
                 text = label + "\n" + str(idx) + "."
 
-                text_x = centroid.x
-                text_y = centroid.y
-                conflicting_text = find_text(centroid.x, centroid.y)
+                text_x, text_y = self._plot_definition.projection.transform_point(centroid.x, centroid.y, data_crs)
+                conflicting_text = find_text(text_x, text_y)
                 if conflicting_text:
+                    self._log.debug("Resolving conflicting text")
                     r = get_renderer(self._plot_definition.ax.get_figure())
                     bbox = get_bboxes([conflicting_text], r, (1.0, 1.0), ax)
-                    text_x = centroid.x - bbox[0].width/10
-                    text_y = centroid.y - bbox[0].height/10
+                    text_x = centroid.x - bbox[0].width / 10
+                    text_y = centroid.y - bbox[0].height / 10
 
-                new_text = self._plot_definition.ax.text(text_x, text_y, text, horizontalalignment='center',
-                                                         verticalalignment='center', zorder=50, fontweight="heavy",
-                                                         fontsize=9)
+                new_text = ax.text(text_x, text_y, text, horizontalalignment='center',
+                                   verticalalignment='center', zorder=50, fontweight="heavy",
+                                   fontsize=7)
                 texts.append(new_text)
                 info[idx] = feat["properties"][text_property]
 
@@ -128,16 +145,18 @@ class PlotFeatures:
             :param metar_features: GEOJSON METAR feature list
             :return:
             """
+            self._log.debug("Plotting METARs")
+
             for feat in metar_features:
                 if feat["geometry"]["type"] == "Point":
-                    geom = transform(m, Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1]))
+                    geom = Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1])
 
                     label = feat["properties"].get("fltcat", "?")
                     color = self._color_scheme.METAR_FLIGHT_CATEGORY_COLORS.get(label,
                                                                                 self._color_scheme.METAR_COLOR_UNKOWN)
 
-                    ax.plot(geom.x, geom.y, 'o', color=color, markersize=5,
-                            zorder=30, alpha=self._color_scheme.METAR_ALPHA)
+                    ax.plot(geom.x, geom.y, 'o', color=color, markersize=4,
+                            zorder=30, alpha=self._color_scheme.METAR_ALPHA, transform=data_crs)
 
         plot_features(features.sigmets_international["features"], "hazard", "rawSigmet")
         plot_features(features.sigmets_us["features"], "hazard", "rawAirSigmet")
@@ -152,7 +171,11 @@ class PlotFeatures:
 
         self._plot_legend(ax, plotting_failed)
 
-        plt.show()
+        canvas = FigureCanvas(self._plot_definition.fig)
+        canvas.print_figure(output_path, format="png", pad_inches=0.2, bbox_inches="tight",
+                            bbox_extra_artists=[], dpi=90)
+
+        return PlotResult(output_path, info, plotting_failed)
 
     def _plot_legend(self, ax, plotting_failed):
         """
@@ -164,6 +187,7 @@ class PlotFeatures:
         :param plotting_failed:
         :return:
         """
+        self._log.debug("Plotting legend")
         ax.set_title(datetime.utcnow().strftime("%Y-%m-%d %H:%MZ"), loc='right')
         if len(plotting_failed) > 0:
             ax.set_title('WARNING! Some SIGMETs or AIRMETs were not plotted due to errors!', loc='left',

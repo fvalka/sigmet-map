@@ -8,7 +8,7 @@ class DefaultColorScheme:
     METAR_COLOR_UNKOWN = '#DAD6CE'
     METAR_FLIGHT_CATEGORY_COLORS = {"VFR": '#87F70F',
                                     "MVFR": '#046D8B',
-                                    "IFR": '#FF3D7F',
+                                    "IFR": '#FF3939',
                                     "LIFR": '#E604F9',
                                     "?": METAR_COLOR_UNKOWN}
     METAR_ALPHA = 0.55
