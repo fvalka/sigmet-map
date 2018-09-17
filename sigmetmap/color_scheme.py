@@ -5,6 +5,8 @@ class DefaultColorScheme:
     MAP_COLOR_COASTLINES = '#00BCD1'
     SIGMET_COLOR = '#D40F67'
     SIGMET_ALPHA = 0.3
+    SIGMET_UNKNOWN_COLOR = '#D40F67'
+    SIGMET_UNKNOWN_ALPHA = 0.15
     METAR_COLOR_UNKOWN = '#DAD6CE'
     METAR_FLIGHT_CATEGORY_COLORS = {"VFR": '#87F70F',
                                     "MVFR": '#046D8B',

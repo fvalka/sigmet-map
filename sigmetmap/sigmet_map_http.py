@@ -8,7 +8,7 @@ from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # CONSTANTS/CONFIGURATION
-from sigmet_map import MapProvider, FeatureProvider, SigmetMap
+from sigmetmap.sigmet_map import MapProvider, FeatureProvider, SigmetMap
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -45,12 +45,12 @@ def sigmet_map(region):
     return jsonify(url=url, infos=plot_result.info, failed=plot_result.failed)
 
 
-@sched.scheduled_job(trigger='interval', minutes=2)
+@sched.scheduled_job(trigger='interval', minutes=10)
 def cleanup():
     now = time.time()
     for file in os.listdir(plots_dir):
         created = os.path.getctime(plots_dir + file)
-        if (now - created) >= 60*60:
+        if (now - created) >= 2*60*60:
             os.unlink(plots_dir + file)
 
 

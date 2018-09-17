@@ -8,9 +8,9 @@ from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from shapely.geometry import asShape, Point, box  # manipulating geometry
+from shapely.geometry import asShape, Point  # manipulating geometry
 
-from model import PlotResult
+from sigmetmap.model import PlotResult
 
 
 class PlotFeatures:
@@ -53,9 +53,10 @@ class PlotFeatures:
             :return: Information dictionary { idx: info_text, ... }
             """
             patches = []
+            patches_unkown = []
             for feat in features:
                 try:
-                    plot_one_feature(feat, label_property, patches, text_property)
+                    plot_one_feature(feat, label_property, patches, patches_unkown, text_property)
                 except ValueError:
                     plotting_failed.append(feat['properties'][text_property])
                     self._log.warning("Plotting of feature=%s failed", feat)
@@ -65,8 +66,13 @@ class PlotFeatures:
                                 edgecolor=self._color_scheme.SIGMET_COLOR,
                                 linewidths=1.5, alpha=self._color_scheme.SIGMET_ALPHA, zorder=40,
                                 transform=data_crs))
+            ax.add_collection(
+                PatchCollection(patches_unkown, facecolor=self._color_scheme.SIGMET_UNKNOWN_COLOR,
+                                linestyle='dashed', edgecolor=self._color_scheme.SIGMET_UNKNOWN_COLOR,
+                                hatch="/", linewidths=1.5, alpha=self._color_scheme.SIGMET_UNKNOWN_ALPHA, zorder=39,
+                                transform=data_crs))
 
-        def plot_one_feature(feat, label_property, patches, text_property):
+        def plot_one_feature(feat, label_property, patches, patches_unkown, text_property):
             """
             Plots one feature. If the feature is a point it will be plotted straight onto the map.
 
@@ -75,6 +81,7 @@ class PlotFeatures:
             :param feat: Feature to be plotted
             :param label_property: Field in feat["properties"] which contains the label to be plotted on the map
             :param patches: Patches collection to which the patch will be appended
+            :param patches_unknown: Patches collection with unkown geometry
             :param text_property: Field in feat["properties"] which contains the text will be added to the info
             :return: Information dictionary with one element { idx: info_text }
             """
@@ -83,8 +90,12 @@ class PlotFeatures:
                 geom_raw = asShape(feat["geometry"])
                 if len(geom_raw.shell) > 2:
                     geom = geom_raw.buffer(0)
-                    patches.append(PolygonPatch(geom))
                     label_geometry(geom, feat, label_property, text_property)
+
+                    if feat["properties"].get("geom", "") == "UNK":
+                        patches_unkown.append(PolygonPatch(geom))
+                    else:
+                        patches.append(PolygonPatch(geom))
                 else:
                     self._log.warning("Encountered feature which had less than 2 elements in its shell feature=%s",
                                       feat)
@@ -201,5 +212,9 @@ class PlotFeatures:
         legend_elements = [metar_legend('VFR'), metar_legend('MVFR'), metar_legend('IFR'),
                            metar_legend('LIFR'), metar_legend('?'),
                            Patch(facecolor=self._color_scheme.SIGMET_COLOR, edgecolor=self._color_scheme.SIGMET_COLOR,
-                                 label='SIGMETs and AIRMETs', alpha=self._color_scheme.SIGMET_ALPHA)]
-        ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.005), ncol=6)
+                                 label='SIGMETs and AIRMETs', alpha=self._color_scheme.SIGMET_ALPHA, linewidth=1.5),
+                           Patch(facecolor=self._color_scheme.SIGMET_UNKNOWN_COLOR,
+                                 linestyle='dashed', edgecolor=self._color_scheme.SIGMET_UNKNOWN_COLOR,
+                                 hatch="/", linewidth=1.5, alpha=self._color_scheme.SIGMET_UNKNOWN_ALPHA,
+                                 label="SIGMETs unknown location in FIR")]
+        ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.005), ncol=5)

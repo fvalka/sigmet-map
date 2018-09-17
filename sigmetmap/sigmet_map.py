@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt  # plotting data
 from shapely.geometry import box  # manipulating geometry
 
 # CONSTANTS/CONFIGURATION
-from color_scheme import DefaultColorScheme, NorthAmericaColorScheme
-from model import PlotDefinition, Features
-from plot_features import PlotFeatures
+from sigmetmap.color_scheme import DefaultColorScheme, NorthAmericaColorScheme
+from sigmetmap.model import PlotDefinition, Features
+from sigmetmap.plot_features import PlotFeatures
 
 
 class SigmetMap:
