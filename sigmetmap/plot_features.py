@@ -20,9 +20,10 @@ class PlotFeatures:
     """
     _log = logging.getLogger('plot_features')
 
-    def __init__(self, plot_definition):
+    def __init__(self, plot_definition, get_title):
         self._color_scheme = plot_definition.color_scheme
         self._plot_definition = plot_definition
+        self._get_title = get_title
 
     def plot(self, features, output_path):
         """
@@ -200,7 +201,7 @@ class PlotFeatures:
         :return:
         """
         self._log.debug("Plotting legend")
-        ax.set_title(datetime.utcnow().strftime("%Y-%m-%d %H:%MZ"), loc='right')
+        ax.set_title(self._get_title(), loc='right')
         if len(plotting_failed) > 0:
             ax.set_title('WARNING! Some SIGMETs or AIRMETs were not plotted due to errors!', loc='left',
                          fontweight="heavy")

@@ -1,3 +1,4 @@
+import datetime
 import json  # reading geojson files
 import logging
 from multiprocessing.pool import ThreadPool
@@ -15,15 +16,16 @@ from sigmetmap.plot_features import PlotFeatures
 
 
 class SigmetMap:
-    def __init__(self, map_provider, feature_provider):
+    def __init__(self, map_provider, feature_provider, legend_provider):
         self._map_provider = map_provider
         self._feature_provider = feature_provider
+        self._legend_provider = legend_provider
 
     def plot(self, region, output_path):
         plot_definition = self._map_provider.create(region)
         features = self._feature_provider.load(plot_definition.bbox_string)
 
-        plot_features = PlotFeatures(plot_definition)
+        plot_features = PlotFeatures(plot_definition, self._legend_provider.get_title)
         return plot_features.plot(features, output_path)
 
 
@@ -139,7 +141,7 @@ class FeatureProvider:
         urls = {"sigmets_international": "https://www.aviationweather.gov/gis/scripts/IsigmetJSON.php",
                 "sigmets_us": "https://www.aviationweather.gov/gis/scripts/SigmetJSON.php",
                 "cwa_us": "https://aviationweather.gov/cgi-bin/json/CwaJSON.php?zoom=4&bbox=" + bbox,
-                "metars": "https://www.aviationweather.gov/gis/scripts/MetarJSON.php?density=all&bbox=" + bbox}
+                "metars": "https://www.aviationweather.gov/gis/scripts/MetarJSON.php?density=all&priority=10&bbox=" + bbox}
 
         features_json = {}
         results = ThreadPool(5).imap_unordered(load_json_from_web, urls.values())
@@ -156,3 +158,8 @@ class FeatureProvider:
 
         return Features(features_json['sigmets_international'], features_json['sigmets_us'], features_json['cwa_us'],
                         features_json['metars'])
+
+
+class LegendProvider:
+    def get_title(self):
+        return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%MZ")

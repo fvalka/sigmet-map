@@ -8,7 +8,7 @@ from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # CONSTANTS/CONFIGURATION
-from sigmetmap.sigmet_map import MapProvider, FeatureProvider, SigmetMap
+from sigmetmap.sigmet_map import MapProvider, FeatureProvider, SigmetMap, LegendProvider
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -19,7 +19,8 @@ cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 # Application Setup
 map_provider = MapProvider()
 feature_provider = FeatureProvider()
-sigmet_map_plotter = SigmetMap(map_provider, feature_provider)
+legend_provider = LegendProvider()
+sigmet_map_plotter = SigmetMap(map_provider, feature_provider, legend_provider)
 plots_dir = "static/"
 
 # Background Task Setup

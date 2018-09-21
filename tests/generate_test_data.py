@@ -3,7 +3,7 @@ import json
 from unittest import mock
 
 from model import Features
-from sigmet_map import FeatureProvider, MapProvider, SigmetMap
+from sigmet_map import FeatureProvider, MapProvider, SigmetMap, LegendProvider
 
 
 class InterceptingFeatureProvider(FeatureProvider):
@@ -27,9 +27,16 @@ class InterceptingFeatureProvider(FeatureProvider):
         write_to_file(self.intercepted.sigmets_us, "sigmets_us.json")
 
 
+class LegendProviderStub(LegendProvider):
+
+    def get_title(self):
+        return "TESTDATA"
+
+
 feature_provider = InterceptingFeatureProvider()
 map_provider = MapProvider()
-sigmet_map = SigmetMap(map_provider, feature_provider)
+legend_provider = LegendProviderStub()
+sigmet_map = SigmetMap(map_provider, feature_provider, legend_provider)
 
 ref_dir = "reference/"
 
@@ -44,7 +51,7 @@ def generate_region(region):
 
 
 generate_region('eu')
-# generate_region('na')
-# generate_region('sa')
-# generate_region('as')
-# generate_region('oc')
+generate_region('na')
+generate_region('sa')
+generate_region('as')
+generate_region('oc')
