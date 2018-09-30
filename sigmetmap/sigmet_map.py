@@ -1,6 +1,7 @@
 import datetime
 import json  # reading geojson files
 import logging
+import pandas as pd
 from multiprocessing.pool import ThreadPool
 from urllib.request import urlopen
 
@@ -122,6 +123,12 @@ class MapProvider:
 class FeatureProvider:
     _log = logging.getLogger('feature_provider')
 
+    def load_from_web(self, definition):
+        name, url, decoder = definition
+        response = urlopen(url)
+        response_decoded = decoder(response)
+        return name, response_decoded
+
     def load(self, bbox):
         """
         Load advanced map features like SIGMETs, AIRMETs and METARs for the region provided in bbox.
@@ -133,31 +140,32 @@ class FeatureProvider:
         """
         self._log.info("Downloading features for bbox=%s", bbox)
 
-        def load_json_from_web(url):
-            response = urlopen(url)
+        def json_decoder(response):
             response_decoded = response.read().decode("utf-8")
-            return url, json.loads(response_decoded)
+            return json.loads(response_decoded)
 
-        urls = {"sigmets_international": "https://www.aviationweather.gov/gis/scripts/IsigmetJSON.php",
-                "sigmets_us": "https://www.aviationweather.gov/gis/scripts/SigmetJSON.php",
-                "cwa_us": "https://aviationweather.gov/cgi-bin/json/CwaJSON.php?zoom=4&bbox=" + bbox,
-                "metars": "https://www.aviationweather.gov/gis/scripts/MetarJSON.php?density=all&priority=10&bbox=" + bbox}
+        def csv_metar_decoder(response):
+            return pd.read_csv(response, skiprows=5, compression='gzip')
 
-        features_json = {}
-        results = ThreadPool(5).imap_unordered(load_json_from_web, urls.values())
+        definitions = [("sigmets_international",
+                        "https://www.aviationweather.gov/gis/scripts/IsigmetJSON.php", json_decoder),
+                       ("sigmets_us",
+                        "https://www.aviationweather.gov/gis/scripts/SigmetJSON.php", json_decoder),
+                       ("cwa_us",
+                        "https://aviationweather.gov/cgi-bin/json/CwaJSON.php?zoom=4&bbox=" + bbox, json_decoder),
+                       ("metars",
+                        "https://www.aviationweather.gov/adds/dataserver_current/current/metars.cache.csv.gz",
+                        csv_metar_decoder)]
 
-        for url, result in results:
-            match = False
-            for name, original_url in urls.items():
-                if url == original_url:
-                    features_json[name] = result
-                    match = True
-                    break
-            if not match:
-                raise ValueError('Got a result for an url which was not requested')
+        features_decoded = {}
+        results = ThreadPool(5).imap_unordered(self.load_from_web, definitions)
 
-        return Features(features_json['sigmets_international'], features_json['sigmets_us'], features_json['cwa_us'],
-                        features_json['metars'])
+        for name, result in results:
+            features_decoded[name] = result
+
+        return Features(features_decoded['sigmets_international'], features_decoded['sigmets_us'],
+                        features_decoded['cwa_us'],
+                        features_decoded['metars'])
 
 
 class LegendProvider:

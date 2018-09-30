@@ -160,11 +160,11 @@ class PlotFeatures:
             """
             self._log.debug("Plotting METARs")
 
-            for feat in metar_features:
-                if feat["geometry"]["type"] == "Point":
-                    geom = Point(feat["geometry"]["coordinates"][0], feat["geometry"]["coordinates"][1])
+            for index, feat in metar_features.iterrows():
+                geom = Point(feat['longitude'], feat['latitude'])
 
-                    label = feat["properties"].get("fltcat", "?")
+                if self._plot_definition.region_box.contains(geom):
+                    label = feat['flight_category']
                     color = self._color_scheme.METAR_FLIGHT_CATEGORY_COLORS.get(label,
                                                                                 self._color_scheme.METAR_COLOR_UNKOWN)
 
@@ -175,7 +175,7 @@ class PlotFeatures:
         plot_features(features.sigmets_us["features"], "hazard", "rawAirSigmet")
         plot_features(features.cwa_us["features"], "hazard", "cwaText")
 
-        plot_metars(features.metars["features"])
+        plot_metars(features.metars)
 
         adjust_text(texts, ha='center', va='center', expand_text=(0.9, 0.9), autoalign=False,
                     on_basemap=True, text_from_points=False,

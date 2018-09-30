@@ -1,6 +1,7 @@
 import datetime
 import json
 from unittest import mock
+from urllib.request import urlopen
 
 from model import Features
 from sigmet_map import FeatureProvider, MapProvider, SigmetMap, LegendProvider
@@ -8,23 +9,25 @@ from sigmet_map import FeatureProvider, MapProvider, SigmetMap, LegendProvider
 
 class InterceptingFeatureProvider(FeatureProvider):
 
-    def __init__(self):
-        self.intercepted: Features = None
+    def __init__(self, ref_dir, prefix):
+        self.ref_dir = ref_dir
+        self.prefix = prefix
+        self.intercepted = []
 
-    def load(self, bbox):
-        self.intercepted = super().load(bbox)
-        return self.intercepted
+    def load_from_web(self, definition):
+        name, url, decoder = definition
+        response = urlopen(url)
+        response_decoded = decoder(response)
 
-    def write(self, prefix):
-        def write_to_file(feature, postfix):
-            encoded = json.dumps(feature)
-            with open(prefix + "_" + postfix, "w") as text_file:
-                text_file.write(encoded)
+        self._write(name, response)
 
-        write_to_file(self.intercepted.sigmets_international, "sigmets_international.json")
-        write_to_file(self.intercepted.metars, "metars.json")
-        write_to_file(self.intercepted.cwa_us, "cwa_us.json")
-        write_to_file(self.intercepted.sigmets_us, "sigmets_us.json")
+        return name, response_decoded
+
+    def _write(self, name, response):
+        f = open(self.ref_dir + self.prefix + "_" + name, "wb")
+        content = response.read()
+        f.write(content)
+        f.close()
 
 
 class LegendProviderStub(LegendProvider):
@@ -33,17 +36,17 @@ class LegendProviderStub(LegendProvider):
         return "TESTDATA"
 
 
-feature_provider = InterceptingFeatureProvider()
+ref_dir = "reference/"
+
+feature_provider = InterceptingFeatureProvider(ref_dir, 'none')
 map_provider = MapProvider()
 legend_provider = LegendProviderStub()
 sigmet_map = SigmetMap(map_provider, feature_provider, legend_provider)
 
-ref_dir = "reference/"
-
 
 def generate_region(region):
+    feature_provider.prefix = region
     result = sigmet_map.plot("%s" % region, "reference/%s.png" % region)
-    feature_provider.write("%s%s" % (ref_dir, region))
     with open(ref_dir + region + "_result_info.json", "w") as text_file:
         text_file.write(json.dumps(result.info))
     with open(ref_dir + region + "_result_failed.json", "w") as text_file:
