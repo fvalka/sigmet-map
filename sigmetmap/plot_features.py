@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+import dateutil.parser
 
 import cartopy.crs as ccrs
 from adjustText import adjust_text, get_renderer, get_bboxes
@@ -168,8 +169,13 @@ class PlotFeatures:
                     color = self._color_scheme.METAR_FLIGHT_CATEGORY_COLORS.get(label,
                                                                                 self._color_scheme.METAR_COLOR_UNKOWN)
 
+                    age = datetime.now(timezone.utc) - dateutil.parser.parse(feat['observation_time'])
+                    age_m = age.total_seconds()/60
+                    alpha_age_factor = min(1, -1/90 * age_m + 4/3)
+                    alpha = self._color_scheme.METAR_ALPHA * alpha_age_factor
+
                     ax.plot(geom.x, geom.y, 'o', color=color, markersize=4,
-                            zorder=30, alpha=self._color_scheme.METAR_ALPHA, transform=data_crs)
+                            zorder=30, alpha=alpha, transform=data_crs)
 
         plot_features(features.sigmets_international["features"], "hazard", "rawSigmet")
         plot_features(features.sigmets_us["features"], "hazard", "rawAirSigmet")
