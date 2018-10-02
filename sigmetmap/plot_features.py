@@ -11,7 +11,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from shapely.geometry import asShape, Point  # manipulating geometry
 
-from sigmetmap.model import PlotResult
+from model import PlotResult
 
 
 class PlotFeatures:

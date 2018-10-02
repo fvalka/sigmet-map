@@ -8,7 +8,7 @@ from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # CONSTANTS/CONFIGURATION
-from sigmetmap.sigmet_map import MapProvider, FeatureProvider, SigmetMap, LegendProvider
+from sigmet_map import MapProvider, FeatureProvider, SigmetMap, LegendProvider
 
 logging.basicConfig(level=logging.DEBUG)
 
