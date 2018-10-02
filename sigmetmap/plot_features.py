@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import logging
 from datetime import datetime, timezone
 import dateutil.parser
