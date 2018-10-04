@@ -4,6 +4,7 @@ import logging
 import os
 import secrets
 import time
+import config
 
 from flask import Flask, jsonify, url_for, abort
 from flask_caching import Cache
@@ -20,7 +21,8 @@ metric_sender = FlaskGraphite()
 
 # Flask Setup
 app = Flask(__name__)
-app.config["FLASK_GRAPHITE_HOST"] = "ip-172-31-15-21.eu-west-1.compute.internal"
+app.config["FLASK_GRAPHITE_HOST"] = config.metrics['host']
+app.config["FLASK_GRAPHITE_PORT"] = config.metrics['port']
 
 metric_sender.init_app(app)
 
