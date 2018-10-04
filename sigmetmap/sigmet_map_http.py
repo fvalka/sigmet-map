@@ -63,7 +63,7 @@ def cleanup():
     now = time.time()
     for file in os.listdir(plots_dir):
         created = os.path.getctime(plots_dir + file)
-        if (now - created) >= 2*60*60:
+        if (now - created) >= config.cleanup['max_age']:
             os.unlink(plots_dir + file)
 
 
