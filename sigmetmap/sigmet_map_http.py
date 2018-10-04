@@ -7,6 +7,7 @@ import time
 
 from flask import Flask, jsonify, url_for, abort
 from flask_caching import Cache
+from flask_graphite import FlaskGraphite
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # CONSTANTS/CONFIGURATION
@@ -14,8 +15,15 @@ from sigmet_map import MapProvider, FeatureProvider, SigmetMap, LegendProvider
 
 logging.basicConfig(level=logging.DEBUG)
 
+# Metrics
+metric_sender = FlaskGraphite()
+
 # Flask Setup
 app = Flask(__name__)
+app.config["FLASK_GRAPHITE_HOST"] = "ip-172-31-15-21.eu-west-1.compute.internal"
+
+metric_sender.init_app(app)
+
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 # Application Setup
